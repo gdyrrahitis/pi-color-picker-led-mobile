@@ -1,0 +1,18 @@
+<ActionBar title="Home">
+</ActionBar>
+
+<GridLayout>
+    <AbsoluteLayout width="400" height="800" backgroundColor="lightgray">
+        <Placeholder top="10" width="400" height="400"
+            (creatingView)="createCanvasView($event)"
+            (touch)="onTouch($event)">
+        </Placeholder>
+
+        <!-- <Label textWrap="true" top="450" width="400" height="150"
+            text="{{coords}}" class="h2 description-label">
+        </Label> -->
+
+        <Label textWrap="true" left="75" top="450" width="400" height="150"
+            text="{{colorCoords}}" class="h2 description-label"></Label>
+    </AbsoluteLayout>
+</GridLayout>
