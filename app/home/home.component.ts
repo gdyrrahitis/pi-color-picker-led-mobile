@@ -2,6 +2,8 @@ import { Component, OnInit } from "@angular/core";
 import * as utils from "tns-core-modules/utils/utils";
 import * as g from "tns-core-modules/ui/gestures";
 import * as platform from 'platform';
+import 'nativescript-websockets';
+import { RxStompService } from "@stomp/ng2-stompjs";
 
 declare var android;
 @Component({
@@ -18,18 +20,21 @@ export class HomeComponent implements OnInit {
     private bitmap;
     private canvas;
     private colorCoords = "";
-    //private coords = "";
     private nativeView;
 
-    constructor() {
+    constructor(private rxStompService: RxStompService) {
+        // Create an image container
         this.nativeView = new android.widget.ImageView(
             utils.ad.getApplicationContext()
         );
+
+        // Set scale type. Super important for the touch event to get proper coords!
         this.nativeView.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         this.nativeView.setAdjustViewBounds(false);
     }
 
     ngOnInit(): void {
+
     }
 
     onTouch(event: g.TouchGestureEventData) {
@@ -37,17 +42,26 @@ export class HomeComponent implements OnInit {
         let y = event.getY();
 
         if (event.action == 'up' || event.action == 'move') {
+            // (x-h)^2 + (y-k)^2 = r^2
             let radius = Math.sqrt(Math.pow((x - 175), 2) + Math.pow(y - 200, 2));
+
+            // If outside of the circle dont continue
             if (radius > this.radius) {
                 return;
             }
 
+            // Get the exact pixel touched in the view
             let color = this.bitmap.getPixel(x, y);
             let blue = android.graphics.Color.blue(color);
             let green = android.graphics.Color.green(color);
             let red = android.graphics.Color.red(color);
-            //this.coords = `X: ${x} Y: ${y}`;
+
+            // Display the color
             this.colorCoords = `R: ${red}, G: ${green}, B: ${blue}`;
+
+            // Publish message to STOMP server
+            const message = { red: red, green: green, blue: blue };
+            this.rxStompService.publish({destination: '/topic/demo', body: JSON.stringify(message)});
         }
     }
 
@@ -64,7 +78,10 @@ export class HomeComponent implements OnInit {
         let rect = new android.graphics.Rect(0, 0, this.width, this.height);
         let xWidth = ((this.width / 2) - this.radius) / 2;
         let yHeight = (this.height / 2) - this.radius;
+        // Move the circle to canvas center
         this.canvas.translate(xWidth, yHeight);
+
+        // Create a new bitmap in which will make the color wheel
         let mybmp = this.bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
         for (let x = -radius; x < radius; x++) {
             for (let y = -radius; y < radius; y++) {
@@ -76,13 +93,14 @@ export class HomeComponent implements OnInit {
                     continue;
                 }
 
-                let deg = this.rad2deg(phi)
-                let adjustedX = x + radius
-                let adjustedY = y + radius
+                let deg = this.rad2deg(phi);
+                let adjustedX = x + radius;
+                let adjustedY = y + radius;
 
                 let hue = deg;
                 let saturation = r / radius;
-                let result = this.hsv2rgb(hue, saturation, this.brightness)
+                // Convert to RGB
+                let result = this.hsv2rgb(hue, saturation, this.brightness);
                 let red = result.red;
                 let green = result.green;
                 let blue = result.blue;
@@ -90,6 +108,7 @@ export class HomeComponent implements OnInit {
                 let paint = new android.graphics.Paint();
                 paint.setARGB(255, red, green, blue);
                 paint.setAntiAlias(true);
+                // Draw the pixel with the proper HSV color
                 mybmp.setPixel(adjustedX, adjustedY, paint.getColor());
             }
         }
