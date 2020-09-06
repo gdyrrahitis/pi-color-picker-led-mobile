@@ -75,14 +75,13 @@ export class HomeComponent implements OnInit {
         let radius = this.radius;
         this.canvas = new android.graphics.Canvas(this.bitmap);
         this.canvas.drawARGB(0, 0, 0, 0);
-        let rect = new android.graphics.Rect(0, 0, this.width, this.height);
-        let xWidth = ((this.width / 2) - this.radius) / 2;
-        let yHeight = (this.height / 2) - this.radius;
+        let xPos = ((this.width / 2) - radius) / 2;
+        let yPos = (this.height / 2) - radius;
         // Move the circle to canvas center
-        this.canvas.translate(xWidth, yHeight);
+        this.canvas.translate(xPos, yPos);
 
         // Create a new bitmap in which will make the color wheel
-        let mybmp = this.bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+        let colorWheelBmp = this.bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
         for (let x = -radius; x < radius; x++) {
             for (let y = -radius; y < radius; y++) {
                 let polar = this.xyToPolar(x, y);
@@ -94,26 +93,24 @@ export class HomeComponent implements OnInit {
                 }
 
                 let deg = this.rad2deg(phi);
-                let adjustedX = x + radius;
-                let adjustedY = y + radius;
+                let oneDimensionX = x + radius;
+                let oneDimensionY = y + radius;
 
                 let hue = deg;
                 let saturation = r / radius;
                 // Convert to RGB
-                let result = this.hsv2rgb(hue, saturation, this.brightness);
-                let red = result.red;
-                let green = result.green;
-                let blue = result.blue;
+                let { red, green, blue } = this.hsv2rgb(hue, saturation, this.brightness);
 
                 let paint = new android.graphics.Paint();
                 paint.setARGB(255, red, green, blue);
                 paint.setAntiAlias(true);
                 // Draw the pixel with the proper HSV color
-                mybmp.setPixel(adjustedX, adjustedY, paint.getColor());
+                colorWheelBmp.setPixel(oneDimensionX, oneDimensionY, paint.getColor());
             }
         }
 
-        this.canvas.drawBitmap(mybmp, rect, rect, null);
+        let rect = new android.graphics.Rect(0, 0, this.width, this.height);
+        this.canvas.drawBitmap(colorWheelBmp, rect, rect, null);
         this.nativeView.setImageBitmap(this.bitmap);
         event.view = this.nativeView;
     }
